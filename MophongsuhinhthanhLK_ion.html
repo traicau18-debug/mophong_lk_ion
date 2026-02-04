@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng chuyển dịch electron - Na & Cl(Sự tạo thành liên kết ion)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .electron {
+            fill: #a78bfa;
+            transition: all 1s ease-in-out;
+        }
+        .shell {
+            fill: none;
+            stroke: #cbd5e1;
+            stroke-width: 1;
+        }
+        .atom-label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .nucleus {
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.1));
+        }
+        .btn-action {
+            transition: transform 0.2s;
+        }
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="max-w-4xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Mô phỏng hình thành liên kết ion</h1>
+            <p class="text-slate-600">Sơ đồ chuyển dịch electron khi hình thành liên kết giữa Na và Cl</p>
+            <p class="text-slate-600">Thiết kế: Nguyễn Mạnh Hưng</p>
+        </header>
+
+        <!-- Simulation Canvas -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-slate-200">
+            <div id="canvas-container" class="relative w-full overflow-hidden" style="height: 400px;">
+                <svg id="main-svg" viewBox="0 0 800 400" class="w-full h-full">
+                    <!-- Sodium (Na) -->
+                    <g id="na-atom" transform="translate(200, 200)">
+                        <circle class="nucleus" r="35" fill="#fce7f3" stroke="#f472b6" stroke-width="2" />
+                        <text x="0" y="5" text-anchor="middle" class="atom-label" fill="#be185d">+11</text>
+                        
+                        <!-- Shells Na -->
+                        <circle class="shell" r="60" />
+                        <circle class="shell" r="90" />
+                        <circle id="na-shell-3" class="shell" r="120" />
+                        
+                        <!-- Electrons Na -->
+                        <!-- Layer 1 (2e) -->
+                        <circle cx="60" cy="0" r="4" class="electron" />
+                        <circle cx="-60" cy="0" r="4" class="electron" />
+                        <!-- Layer 2 (8e) -->
+                        <g class="orbit-group">
+                            <circle cx="90" cy="0" r="4" class="electron" />
+                            <circle cx="63.6" cy="63.6" r="4" class="electron" />
+                            <circle cx="0" cy="90" r="4" class="electron" />
+                            <circle cx="-63.6" cy="63.6" r="4" class="electron" />
+                            <circle cx="-90" cy="0" r="4" class="electron" />
+                            <circle cx="-63.6" cy="-63.6" r="4" class="electron" />
+                            <circle cx="0" cy="-90" r="4" class="electron" />
+                            <circle cx="63.6" cy="-63.6" r="4" class="electron" />
+                        </g>
+                    </g>
+
+                    <!-- Chlorine (Cl) -->
+                    <g id="cl-atom" transform="translate(600, 200)">
+                        <circle class="nucleus" r="35" fill="#f0fdf4" stroke="#4ade80" stroke-width="2" />
+                        <text x="0" y="5" text-anchor="middle" class="atom-label" fill="#15803d">+17</text>
+                        
+                        <!-- Shells Cl -->
+                        <circle class="shell" r="60" />
+                        <circle class="shell" r="90" />
+                        <circle class="shell" r="120" />
+
+                        <!-- Electrons Cl -->
+                        <!-- Layer 1 (2e) -->
+                        <circle cx="60" cy="0" r="4" class="electron" />
+                        <circle cx="-60" cy="0" r="4" class="electron" />
+                        <!-- Layer 2 (8e) -->
+                        <circle cx="90" cy="0" r="4" class="electron" />
+                        <circle cx="0" cy="90" r="4" class="electron" />
+                        <circle cx="-90" cy="0" r="4" class="electron" />
+                        <circle cx="0" cy="-90" r="4" class="electron" />
+                        <circle cx="63.6" cy="63.6" r="4" class="electron" />
+                        <circle cx="-63.6" cy="63.6" r="4" class="electron" />
+                        <circle cx="-63.6" cy="-63.6" r="4" class="electron" />
+                        <circle cx="63.6" cy="-63.6" r="4" class="electron" />
+                        <!-- Layer 3 (7e) -->
+                        <g id="cl-valence">
+                            <circle cx="120" cy="0" r="4" class="electron" />
+                            <circle cx="84.8" cy="84.8" r="4" class="electron" />
+                            <circle cx="0" cy="120" r="4" class="electron" />
+                            <circle cx="-84.8" cy="84.8" r="4" class="electron" />
+                            <circle cx="-120" cy="0" r="4" class="electron" />
+                            <circle cx="-84.8" cy="-84.8" r="4" class="electron" />
+                            <circle cx="0" cy="-120" r="4" class="electron" />
+                            <!-- Slot for receiving electron -->
+                            <circle id="target-slot" cx="84.8" cy="-84.8" r="5" fill="none" stroke="#cbd5e1" stroke-dasharray="2" />
+                        </g>
+                    </g>
+
+                    <!-- Electron being moved (Outside groups for better control) -->
+                    <circle id="moving-electron" cx="320" cy="200" r="5" fill="#7c3aed" style="transition: all 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);" />
+
+                    <!-- Labels -->
+                    <text id="label-na" x="200" y="360" text-anchor="middle" class="text-xl font-bold italic" fill="#64748b">Nguyên tử Na</text>
+                    <text id="label-cl" x="600" y="360" text-anchor="middle" class="text-xl font-bold italic" fill="#64748b">Nguyên tử Cl</text>
+                </svg>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap justify-center gap-4 mt-6">
+                <button onclick="startSimulation()" id="btn-play" class="btn-action bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold shadow-lg">
+                    Bắt đầu chuyển dịch
+                </button>
+                <button onclick="resetSimulation()" class="btn-action bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-2 rounded-full font-semibold">
+                    Đặt lại
+                </button>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-2xl shadow-md">
+            <h2 class="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Câu hỏi ôn tập
+            </h2>
+            <p class="text-slate-800 font-medium mb-4">Phát biểu nào dưới đây phù hợp với sơ đồ phản ứng?</p>
+            
+            <div class="space-y-3">
+                <label onclick="checkAnswer(1)" class="flex items-start p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
+                    <input type="radio" name="quiz" id="opt1" class="mt-1 mr-3">
+                    <span class="text-slate-700">(1) Nguyên tử Na nhường, nguyên tử Cl nhận electron để trở thành các ion.</span>
+                </label>
+                <label onclick="checkAnswer(2)" class="flex items-start p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
+                    <input type="radio" name="quiz" id="opt2" class="mt-1 mr-3">
+                    <span class="text-slate-700">(2) Nguyên tử Na và Cl góp chung electron để trở thành các ion.</span>
+                </label>
+            </div>
+            
+            <div id="feedback" class="mt-4 hidden p-3 rounded-lg text-sm font-semibold"></div>
+        </div>
+    </div>
+
+    <script>
+        let isAnimated = false;
+
+        function startSimulation() {
+            if (isAnimated) return;
+            isAnimated = true;
+            
+            const electron = document.getElementById('moving-electron');
+            const naShell3 = document.getElementById('na-shell-3');
+            const target = document.getElementById('target-slot');
+            const labelNa = document.getElementById('label-na');
+            const labelCl = document.getElementById('label-cl');
+            const btnPlay = document.getElementById('btn-play');
+            const naAtom = document.getElementById('na-atom');
+            const clAtom = document.getElementById('cl-atom');
+
+            btnPlay.disabled = true;
+            btnPlay.classList.add('opacity-50');
+
+            // 1. Tọa độ đích ban đầu của electron (Cl tại 600,200 + offset 84.8, -84.8)
+            const targetX = 600 + 84.8;
+            const targetY = 200 - 84.8;
+
+            electron.setAttribute('cx', targetX);
+            electron.setAttribute('cy', targetY);
+
+            // 2. Sau khi electron bay đến đích
+            setTimeout(() => {
+                // Thay đổi trạng thái vỏ và nhãn
+                naShell3.style.opacity = '0.2';
+                naShell3.style.transition = 'opacity 1s';
+                
+                labelNa.textContent = "Ion Na+";
+                labelNa.setAttribute('fill', '#be185d');
+                labelCl.textContent = "Ion Cl-";
+                labelCl.setAttribute('fill', '#15803d');
+
+                // Đồng bộ hóa: Di chuyển cả hai nguyên tử và electron cùng lúc
+                // Na: 200 -> 250 (+50)
+                // Cl: 600 -> 550 (-50)
+                // Electron: targetX -> targetX - 50 (để dính chặt vào Cl)
+                
+                naAtom.style.transition = 'transform 1s ease-in-out';
+                clAtom.style.transition = 'transform 1s ease-in-out';
+                electron.style.transition = 'all 1s ease-in-out'; // Đổi sang transition đồng bộ với ion
+
+                naAtom.setAttribute('transform', 'translate(250, 200)');
+                clAtom.setAttribute('transform', 'translate(550, 200)');
+                electron.setAttribute('cx', targetX - 50);
+                
+                target.setAttribute('fill', '#7c3aed');
+                target.setAttribute('stroke', 'none');
+            }, 1550); // Chờ electron bay xong (1.5s) + 50ms buffer
+        }
+
+        function resetSimulation() {
+            isAnimated = false;
+            const electron = document.getElementById('moving-electron');
+            const naShell3 = document.getElementById('na-shell-3');
+            const labelNa = document.getElementById('label-na');
+            const labelCl = document.getElementById('label-cl');
+            const target = document.getElementById('target-slot');
+            const btnPlay = document.getElementById('btn-play');
+            const naAtom = document.getElementById('na-atom');
+            const clAtom = document.getElementById('cl-atom');
+
+            btnPlay.disabled = false;
+            btnPlay.classList.remove('opacity-50');
+
+            // Reset electron
+            electron.style.transition = 'none';
+            electron.setAttribute('cx', 320);
+            electron.setAttribute('cy', 200);
+            // Re-apply transition for next run
+            setTimeout(() => {
+                electron.style.transition = 'all 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+            }, 50);
+
+            naShell3.style.opacity = '1';
+            
+            labelNa.textContent = "Nguyên tử Na";
+            labelNa.setAttribute('fill', '#64748b');
+            labelCl.textContent = "Nguyên tử Cl";
+            labelCl.setAttribute('fill', '#64748b');
+
+            naAtom.style.transition = 'none';
+            clAtom.style.transition = 'none';
+            naAtom.setAttribute('transform', 'translate(200, 200)');
+            clAtom.setAttribute('transform', 'translate(600, 200)');
+
+            target.setAttribute('fill', 'none');
+            target.setAttribute('stroke', '#cbd5e1');
+
+            document.querySelectorAll('input[name="quiz"]').forEach(r => r.checked = false);
+            const fb = document.getElementById('feedback');
+            fb.classList.add('hidden');
+        }
+
+        function checkAnswer(choice) {
+            const fb = document.getElementById('feedback');
+            fb.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
+            if (choice === 1) {
+                fb.textContent = "Chính xác! Na nhường 1 electron ở lớp ngoài cùng để trở thành ion dương Na+, Cl nhận 1 electron đó để trở thành ion âm Cl-.";
+                fb.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                fb.textContent = "Chưa đúng. Đây là liên kết ion (nhường - nhận electron), không phải góp chung electron như liên kết cộng hóa trị.";
+                fb.classList.add('bg-red-100', 'text-red-800');
+            }
+        }
+    </script>
+</body>
+</html>
